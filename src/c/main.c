@@ -539,8 +539,8 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
       // Right: i=7..22  (42°..132°)
       // Bottom: i=22..37 (132°..222°)
       // Left: i=37..52  (222°..312°)
-      // Outer endpoint: edge pixel, then nudge top/bottom/right inward by 1
-      GPoint outer_pt = perimeter_edge_nudge(square_perimeter_point(center, angle, 0, 0));
+      // Outer endpoint: raw edge pixel (no nudge) — 1px stroke renders exactly here
+      GPoint outer_pt = square_perimeter_point(center, angle, 0, 0);
       int dx = center.x - outer_pt.x;
       int dy = center.y - outer_pt.y;
       int adx = dx < 0 ? -dx : dx;
