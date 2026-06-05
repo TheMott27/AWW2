@@ -267,8 +267,8 @@ static GColor rgb_to_gcolor(int32_t rgb) {
   return GColorFromRGB((rgb >> 16) & 0xFF, (rgb >> 8) & 0xFF, rgb & 0xFF);
 }
 
-// Monochrome helper for aplite/diorite: any colour except black becomes white.
-#if defined(PBL_PLATFORM_APLITE) || defined(PBL_PLATFORM_DIORITE)
+// Monochrome helper for aplite/diorite/flint: any colour except black becomes white.
+#if defined(PBL_PLATFORM_APLITE) || defined(PBL_PLATFORM_DIORITE) || defined(PBL_PLATFORM_FLINT)
   #define MONO_COLOR(c) (gcolor_equal((c), GColorBlack) ? GColorBlack : GColorWhite)
 #else
   #define MONO_COLOR(c) (c)
