@@ -530,8 +530,8 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
       // Right: i=7..22  (42°..132°)
       // Bottom: i=22..37 (132°..222°)
       // Left: i=37..52  (222°..312°)
-      // Outer endpoint at the true screen edge (pixel 0 on each side)
-      GPoint outer_pt = square_perimeter_point(center, angle, 0, 0);
+      // Outer endpoint 1px beyond screen edge so 1px stroke renders at pixel 0
+      GPoint outer_pt = square_perimeter_point(center, angle, -1, -1);
       int dx = center.x - outer_pt.x;
       int dy = center.y - outer_pt.y;
       int adx = dx < 0 ? -dx : dx;
