@@ -530,22 +530,8 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
       // Right: i=7..22  (42°..132°)
       // Bottom: i=22..37 (132°..222°)
       // Left: i=37..52  (222°..312°)
-      // Use margin_x/y per side to make all markers flush with screen edge
-      int mx = 0, my = 0;
-      // Determine dominant side from angle
-      int32_t sin_a = sin_lookup(angle);
-      int32_t cos_a = cos_lookup(angle);
-      int32_t abs_sin = sin_a < 0 ? -sin_a : sin_a;
-      int32_t abs_cos = cos_a < 0 ? -cos_a : cos_a;
-      // If abs_sin > abs_cos: left or right side; else: top or bottom
-      if (abs_sin > abs_cos) {
-        // Left or right side — left side gets extra -1px outward
-        mx = (sin_a < 0) ? -1 : 0;  // left: x=-1 (1px beyond left edge), right: x=s_screen_w-1
-      } else {
-        // Top or bottom side — flush to screen edge
-        my = (cos_a > 0) ? -1 : 0;  // bottom: -1 (1px outward), top: 0
-      }
-      GPoint outer_pt = square_perimeter_point(center, angle, mx, my);
+      // Outer endpoint at the true screen edge (pixel 0 on each side)
+      GPoint outer_pt = square_perimeter_point(center, angle, 0, 0);
       int dx = center.x - outer_pt.x;
       int dy = center.y - outer_pt.y;
       int adx = dx < 0 ? -dx : dx;
