@@ -346,6 +346,15 @@ static GPoint square_perimeter_point(GPoint center, int32_t angle,
   );
 }
 
+// Nudge a perimeter point 1px inward on top, bottom, and right edges.
+// Left edge is unchanged. Applied to all perimeter-placed elements.
+static GPoint perimeter_edge_nudge(GPoint pt) {
+  if (pt.x >= s_screen_w - 1) pt.x -= 1;  // right edge
+  if (pt.y <= 0)              pt.y += 1;  // top edge
+  if (pt.y >= s_screen_h - 1) pt.y -= 1;  // bottom edge
+  return pt;
+}
+
 // ============================================================
 // WEATHER ICON DRAWING
 // ============================================================
@@ -503,7 +512,7 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
   if (s_settings.seconds_hand_mode != SECONDS_MODE_NEVER &&
       !(s_settings.seconds_hand_mode == SECONDS_MODE_SHAKE && !s_showing_seconds)) {
     int32_t sec_angle = DEG_TO_TRIGANGLE(s_tick_tm.tm_sec * 6);
-    GPoint sec_tip  = square_perimeter_point(center, sec_angle, 0, 0);
+    GPoint sec_tip  = perimeter_edge_nudge(square_perimeter_point(center, sec_angle, 0, 0));
     GPoint sec_tail = polar_to_point(center, sec_angle + DEG_TO_TRIGANGLE(180), POS_Y(18));
     graphics_context_set_stroke_color(ctx, MONO_COLOR(s_settings.seconds_hand_color));
     graphics_context_set_stroke_width(ctx, 1);
@@ -530,8 +539,8 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
       // Right: i=7..22  (42°..132°)
       // Bottom: i=22..37 (132°..222°)
       // Left: i=37..52  (222°..312°)
-      // Outer endpoint 1px beyond screen edge so 1px stroke renders at pixel 0
-      GPoint outer_pt = square_perimeter_point(center, angle, -1, -1);
+      // Outer endpoint: edge pixel, then nudge top/bottom/right inward by 1
+      GPoint outer_pt = perimeter_edge_nudge(square_perimeter_point(center, angle, 0, 0));
       int dx = center.x - outer_pt.x;
       int dy = center.y - outer_pt.y;
       int adx = dx < 0 ? -dx : dx;
@@ -548,7 +557,7 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
   graphics_context_set_stroke_width(ctx, 3);
   for (int h = 0; h < 12; h++) {
     int32_t angle = DEG_TO_TRIGANGLE(h * 30);
-    GPoint outer_pt = square_perimeter_point(center, angle, 0, 0);
+    GPoint outer_pt = perimeter_edge_nudge(square_perimeter_point(center, angle, 0, 0));
     int dx = center.x - outer_pt.x;
     int dy = center.y - outer_pt.y;
     int adx = dx < 0 ? -dx : dx;
@@ -591,7 +600,7 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
       int32_t angle = DEG_TO_TRIGANGLE(marker * 6);
 
       // Draw a 3px wide, 5px long marker from the screen edge inward
-      GPoint outer_pt = square_perimeter_point(center, angle, 0, 0);
+      GPoint outer_pt = perimeter_edge_nudge(square_perimeter_point(center, angle, 0, 0));
       int dx = center.x - outer_pt.x;
       int dy = center.y - outer_pt.y;
       int adx = dx < 0 ? -dx : dx;
@@ -618,7 +627,7 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
   for (int h = 0; h < 12; h++) {
     int32_t angle = DEG_TO_TRIGANGLE(h * 30);
     bool is_top_bottom = (h == 0 || h == 1 || h == 5 || h == 6 || h == 7 || h == 11);
-    GPoint pos = square_perimeter_point(center, angle, 0, 0);
+    GPoint pos = perimeter_edge_nudge(square_perimeter_point(center, angle, 0, 0));
 
     // No custom positioning — use original clock positions for all numbers
     // pos is already set to the correct position from square_perimeter_point above
@@ -630,23 +639,23 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
       if (is_top_bottom) {
         // Top/bottom icons: keep original x, adjust y
         if (h == 0 || h == 1 || h == 11) {
-          // Top icons (12, 1, 11): keep x, place at top
-          pos.y = 0;
+          // Top icons (12, 1, 11): keep x, place at top (nudged 1px in)
+          pos.y = 1;
         } else {
-          // Bottom icons (5, 6, 7): keep x, place at bottom
-          pos.y = s_screen_h;
+          // Bottom icons (5, 6, 7): keep x, place at bottom (nudged 1px in)
+          pos.y = s_screen_h - 1;
         }
       } else {
         // Left/right icons: keep original y, adjust x
         if (h == 9) {
-          // Icon 9: place at left-center
+          // Icon 9: place at left-center (left edge unchanged)
           pos.x = 0;
         } else if (h == 8 || h == 10) {
-          // Left icons (8, 10): keep y, place at left edge
+          // Left icons (8, 10): keep y, place at left edge (unchanged)
           pos.x = 0;
         } else {
-          // Right icons (2, 3, 4): keep y, place at right edge
-          pos.x = s_screen_w;
+          // Right icons (2, 3, 4): keep y, place at right edge (nudged 1px in)
+          pos.x = s_screen_w - 1;
         }
       }
       int clock_num = (h == 0) ? 12 : h;
@@ -670,36 +679,38 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
       GPoint icon_center = pos;
       if (is_top_bottom) {
         // Keep original x (clock perimeter position), adjust y by actual height
+        // Top nudged 1px in, bottom nudged 1px in
         if (h == 0 || h == 1 || h == 11) {
-          icon_center.y = bounds.h / 2 + edge_margin;
+          icon_center.y = 1 + bounds.h / 2 + edge_margin;
         } else {
-          icon_center.y = s_screen_h - bounds.h / 2 - edge_margin;
+          icon_center.y = (s_screen_h - 1) - bounds.h / 2 - edge_margin;
         }
       } else {
         // Corner icon adjusted y positions (accounting for edge margin + half icon height):
         // 25/50/75% are calculated between top and bottom rendered positions.
-        int top_y = bounds.h / 2 + edge_margin;
-        int bot_y = s_screen_h - bounds.h / 2 - edge_margin;
+        // Top nudged +1, bottom nudged -1, right nudged -1, left unchanged.
+        int top_y = 1 + bounds.h / 2 + edge_margin;
+        int bot_y = (s_screen_h - 1) - bounds.h / 2 - edge_margin;
         if (h == 10) {
-          icon_center.x = bounds.w / 2 + edge_margin;
+          icon_center.x = bounds.w / 2 + edge_margin;  // left: unchanged
           icon_center.y = top_y + (bot_y - top_y) * 1 / 4;  // 25%
         } else if (h == 9) {
-          icon_center.x = bounds.w / 2 + edge_margin;
+          icon_center.x = bounds.w / 2 + edge_margin;  // left: unchanged
           icon_center.y = top_y + (bot_y - top_y) * 2 / 4;  // 50%
         } else if (h == 8) {
-          icon_center.x = bounds.w / 2 + edge_margin;
+          icon_center.x = bounds.w / 2 + edge_margin;  // left: unchanged
           icon_center.y = top_y + (bot_y - top_y) * 3 / 4;  // 75%
         } else if (h == 2) {
-          icon_center.x = s_screen_w - bounds.w / 2 - edge_margin;
+          icon_center.x = (s_screen_w - 1) - bounds.w / 2 - edge_margin;  // right: -1
           icon_center.y = top_y + (bot_y - top_y) * 1 / 4;  // 25%
         } else if (h == 3) {
-          icon_center.x = s_screen_w - bounds.w / 2 - edge_margin;
+          icon_center.x = (s_screen_w - 1) - bounds.w / 2 - edge_margin;  // right: -1
           icon_center.y = top_y + (bot_y - top_y) * 2 / 4;  // 50%
         } else if (h == 4) {
-          icon_center.x = s_screen_w - bounds.w / 2 - edge_margin;
+          icon_center.x = (s_screen_w - 1) - bounds.w / 2 - edge_margin;  // right: -1
           icon_center.y = top_y + (bot_y - top_y) * 3 / 4;  // 75%
         } else {
-          icon_center.x = s_screen_w - bounds.w / 2 - edge_margin;
+          icon_center.x = (s_screen_w - 1) - bounds.w / 2 - edge_margin;  // right: -1
         }
       }
       draw_weather_icon(ctx, icon, icon_center, FIXED_ICON_SIZE);
