@@ -725,14 +725,6 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
   }
 
   s_bg_last_hour = (int8_t)cur_hour;
-
-  // ---- TEST LINES (remove before release) ----
-  // Line A: y=0, x=0 to x=s_screen_w-1 (first row of pixels)
-  // Line B: y=168, x=1 to x=s_screen_w-1 (one beyond last row — test if visible)
-  graphics_context_set_stroke_color(ctx, GColorRed);
-  graphics_context_set_stroke_width(ctx, 1);
-  graphics_draw_line(ctx, GPoint(0, 0), GPoint(s_screen_w - 1, 0));
-  graphics_draw_line(ctx, GPoint(1, 168), GPoint(s_screen_w - 1, 168));
 }
 
 // ============================================================
