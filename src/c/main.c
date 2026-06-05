@@ -318,16 +318,24 @@ static GPoint polar_to_point(GPoint center, int32_t angle, int radius) {
 }
 
 // Maps a clock angle to a point on the rectangular screen perimeter.
+// margin_x/margin_y shrink the rectangle inward from each edge by that many pixels.
+// With margin=0 the result is always the exact screen edge pixel (no trig rounding).
 static GPoint square_perimeter_point(GPoint center, int32_t angle,
                                      int margin_x, int margin_y) {
   int32_t sin_a = sin_lookup(angle);
   int32_t cos_a = cos_lookup(angle);
-  int hw = center.x - margin_x - 1;
-  int hh = center.y - margin_y - 1;
-  if (hw < 1) hw = 1;
-  if (hh < 1) hh = 1;
   int32_t abs_sin = sin_a < 0 ? -sin_a : sin_a;
   int32_t abs_cos = cos_a < 0 ? -cos_a : cos_a;
+  // Distances from center to each edge (using actual screen bounds)
+  int left   = center.x - margin_x;          // distance to left edge
+  int right  = (s_screen_w - 1 - margin_x) - center.x;  // distance to right edge
+  int top    = center.y - margin_y;          // distance to top edge
+  int bottom = (s_screen_h - 1 - margin_y) - center.y;  // distance to bottom edge
+  // Half-widths in the direction of travel
+  int hw = (sin_a > 0) ? right : left;
+  int hh = (cos_a > 0) ? top   : bottom;
+  if (hw < 0) hw = 0;
+  if (hh < 0) hh = 0;
   int32_t t;
   if (abs_sin == 0 && abs_cos == 0) {
     t = TRIG_MAX_RATIO;
@@ -340,10 +348,17 @@ static GPoint square_perimeter_point(GPoint center, int32_t angle,
     int32_t t_h = (int32_t)((int64_t)hh * TRIG_MAX_RATIO / abs_cos);
     t = t_w < t_h ? t_w : t_h;
   }
-  return GPoint(
+  GPoint pt = GPoint(
     center.x + (int)((int64_t)sin_a * t / TRIG_MAX_RATIO),
     center.y - (int)((int64_t)cos_a * t / TRIG_MAX_RATIO)
   );
+  // Snap the edge coordinate to the exact boundary pixel to eliminate trig rounding
+  if (abs_sin >= abs_cos) {
+    pt.x = (sin_a > 0) ? (s_screen_w - 1 - margin_x) : margin_x;
+  } else {
+    pt.y = (cos_a > 0) ? margin_y : (s_screen_h - 1 - margin_y);
+  }
+  return pt;
 }
 
 // ============================================================
@@ -530,20 +545,7 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
       // Right: i=7..22  (42°..132°)
       // Bottom: i=22..37 (132°..222°)
       // Left: i=37..52  (222°..312°)
-      // Get perimeter point then snap the edge coordinate to exact screen boundary
       GPoint outer_pt = square_perimeter_point(center, angle, 0, 0);
-      // Detect which edge this point is on and force it to pixel 0
-      int32_t sin_a2 = sin_lookup(angle);
-      int32_t cos_a2 = cos_lookup(angle);
-      int32_t abs_sin2 = sin_a2 < 0 ? -sin_a2 : sin_a2;
-      int32_t abs_cos2 = cos_a2 < 0 ? -cos_a2 : cos_a2;
-      if (abs_sin2 >= abs_cos2) {
-        // Left or right edge
-        outer_pt.x = (sin_a2 > 0) ? (s_screen_w - 1) : 0;
-      } else {
-        // Top or bottom edge
-        outer_pt.y = (cos_a2 > 0) ? 0 : (s_screen_h - 1);
-      }
       int dx = center.x - outer_pt.x;
       int dy = center.y - outer_pt.y;
       int adx = dx < 0 ? -dx : dx;
@@ -610,18 +612,6 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
 
       // Draw a 3px wide, 5px long marker from the screen edge inward
       GPoint outer_pt = square_perimeter_point(center, angle, 0, 0);
-      // Snap edge coordinate to exact screen boundary (same as minute markers)
-      {
-        int32_t sa = sin_lookup(angle);
-        int32_t ca = cos_lookup(angle);
-        int32_t abs_sa = sa < 0 ? -sa : sa;
-        int32_t abs_ca = ca < 0 ? -ca : ca;
-        if (abs_sa >= abs_ca) {
-          outer_pt.x = (sa > 0) ? (s_screen_w - 1) : 0;
-        } else {
-          outer_pt.y = (ca > 0) ? 0 : (s_screen_h - 1);
-        }
-      }
       int dx = center.x - outer_pt.x;
       int dy = center.y - outer_pt.y;
       int adx = dx < 0 ? -dx : dx;
