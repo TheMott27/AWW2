@@ -641,7 +641,15 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
 
   // ---- Hour numbers / icons ----
   const int icon_half = FIXED_ICON_SIZE / 2;
-  const int num_half  = POS_Y(14);
+  // Gap in pixels between the inner end of an hour marker and the near edge of a number.
+  // The inner end of a 1px-deep hour marker is 1px inward from the outer point.
+  const int NUM_GAP = 2;
+  // Pre-measure the font for number positioning
+  GFont num_font = get_number_font();
+  GSize num_sz = graphics_text_layout_get_content_size("12", num_font,
+    GRect(0, 0, 40, 40), GTextOverflowModeWordWrap, GTextAlignmentCenter);
+  int num_tw = num_sz.w + 4;  // matches draw_hour_number padding
+  int num_th = num_sz.h + 4;
   int cur_hour = s_tick_tm.tm_hour;
   int cur_min  = s_tick_tm.tm_min;
 
@@ -725,14 +733,29 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
       draw_weather_icon(ctx, icon, icon_center, FIXED_ICON_SIZE);
 
     } else if (s_settings.display_hour_markers) {
+      // Position number so its near edge is exactly NUM_GAP pixels beyond the
+      // inner end of the hour marker (which is 1px inward from outer_pt).
+      // near_edge = outer_pt +/- 1 +/- NUM_GAP  =>  centre = near_edge +/- half_dim
       if (is_top_bottom) {
-        if (h == 0 || h == 1 || h == 11) pos.y += num_half;
-        else                              pos.y -= num_half;
+        if (h == 0 || h == 1 || h == 11) {
+          // Top: outer_pt.y is near top edge; inner end is outer_pt.y + 1 (downward)
+          // top of number = inner_end + NUM_GAP  =>  centre.y = inner_end + NUM_GAP + num_th/2
+          pos.y = pos.y + 1 + NUM_GAP + num_th / 2;
+        } else {
+          // Bottom: outer_pt.y is near bottom edge; inner end is outer_pt.y - 1 (upward)
+          // bottom of number = inner_end - NUM_GAP  =>  centre.y = inner_end - NUM_GAP - num_th/2
+          pos.y = pos.y - 1 - NUM_GAP - num_th / 2;
+        }
       } else {
-        // Left side (8, 9, 10): move inward (right)
-        // Right side (2, 3, 4): move inward (left)
-        if (h == 8 || h == 9 || h == 10) pos.x += num_half;
-        else                              pos.x -= num_half;
+        if (h == 8 || h == 9 || h == 10) {
+          // Left: outer_pt.x is near left edge; inner end is outer_pt.x + 1 (rightward)
+          // left of number = inner_end + NUM_GAP  =>  centre.x = inner_end + NUM_GAP + num_tw/2
+          pos.x = pos.x + 1 + NUM_GAP + num_tw / 2;
+        } else {
+          // Right: outer_pt.x is near right edge; inner end is outer_pt.x - 1 (leftward)
+          // right of number = inner_end - NUM_GAP  =>  centre.x = inner_end - NUM_GAP - num_tw/2
+          pos.x = pos.x - 1 - NUM_GAP - num_tw / 2;
+        }
       }
       draw_hour_number(ctx, h, pos);
     }
