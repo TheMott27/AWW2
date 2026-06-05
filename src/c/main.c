@@ -533,18 +533,11 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
   }
 
   // ---- Minute markers (60 × 1px dot) ----
-  // Use margin_x=0, margin_y=0 so markers are flush on all sides.
-  // Per-side offsets applied after to correct for screen boundary differences.
   if (s_settings.display_minor_markers) {
     graphics_context_set_stroke_color(ctx, MONO_COLOR(s_settings.minute_marker_color));
     graphics_context_set_stroke_width(ctx, 1);
     for (int i = 0; i < 60; i++) {
       int32_t angle = DEG_TO_TRIGANGLE(i * 6);
-      // Determine which side this marker is on (by angle quadrant)
-      // Top: i=45..59 and i=0..14 (315°..360° and 0°..90°-ish)
-      // Right: i=7..22  (42°..132°)
-      // Bottom: i=22..37 (132°..222°)
-      // Left: i=37..52  (222°..312°)
       GPoint outer_pt = square_perimeter_point(center, angle, 0, 0);
       int dx = center.x - outer_pt.x;
       int dy = center.y - outer_pt.y;
@@ -630,10 +623,7 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
   }
 
   // ---- Hour numbers / icons ----
-  const int icon_half = FIXED_ICON_SIZE / 2;
-  // Gap in pixels between the inner end of an hour marker and the near edge of a number.
-  // The inner end of a 1px-deep hour marker is 1px inward from the outer point.
-  const int NUM_GAP = 2;
+  const int NUM_GAP = 2;  // px gap between screen edge and near edge of number
   GFont num_font = get_number_font();
   int cur_hour = s_tick_tm.tm_hour;
   int cur_min  = s_tick_tm.tm_min;
@@ -643,13 +633,7 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
     bool is_top_bottom = (h == 0 || h == 1 || h == 5 || h == 6 || h == 7 || h == 11);
     GPoint pos = square_perimeter_point(center, angle, 0, 0);
 
-    // No custom positioning — use original clock positions for all numbers
-    // pos is already set to the correct position from square_perimeter_point above
-
     if (show_icons) {
-      // Store original position from clock perimeter
-      GPoint orig_pos = pos;
-      
       if (is_top_bottom) {
         // Top/bottom icons: keep original x, adjust y
         if (h == 0 || h == 1 || h == 11) {
@@ -1212,7 +1196,6 @@ static void inbox_received_handler(DictionaryIterator *iter, void *context) {
   update_tick_subscription();
 
   s_bg_last_hour = -1;
-  layer_mark_dirty(s_bg_layer);
   layer_mark_dirty(s_bg_layer);
   layer_mark_dirty(s_hour_layer);
   layer_mark_dirty(s_minute_layer);
