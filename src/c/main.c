@@ -539,8 +539,8 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
       // Right: i=7..22  (42°..132°)
       // Bottom: i=22..37 (132°..222°)
       // Left: i=37..52  (222°..312°)
-      // Outer endpoint: raw edge pixel (no nudge) — 1px stroke renders exactly here
-      GPoint outer_pt = square_perimeter_point(center, angle, 0, 0);
+      // Outer endpoint at true pixel 0: margin=-1 gives hw=center.x, hh=center.y
+      GPoint outer_pt = square_perimeter_point(center, angle, -1, -1);
       int dx = center.x - outer_pt.x;
       int dy = center.y - outer_pt.y;
       int adx = dx < 0 ? -dx : dx;
@@ -725,6 +725,14 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
   }
 
   s_bg_last_hour = (int8_t)cur_hour;
+
+  // ---- TEST LINES (remove before release) ----
+  // Line A: y=0, x=0 to x=s_screen_w-1 (first row of pixels)
+  // Line B: y=168, x=1 to x=s_screen_w-1 (one beyond last row — test if visible)
+  graphics_context_set_stroke_color(ctx, GColorRed);
+  graphics_context_set_stroke_width(ctx, 1);
+  graphics_draw_line(ctx, GPoint(0, 0), GPoint(s_screen_w - 1, 0));
+  graphics_draw_line(ctx, GPoint(1, 168), GPoint(s_screen_w - 1, 168));
 }
 
 // ============================================================
