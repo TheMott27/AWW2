@@ -322,8 +322,8 @@ static GPoint square_perimeter_point(GPoint center, int32_t angle,
                                      int margin_x, int margin_y) {
   int32_t sin_a = sin_lookup(angle);
   int32_t cos_a = cos_lookup(angle);
-  int hw = center.x - margin_x;
-  int hh = center.y - margin_y;
+  int hw = center.x - margin_x - 1;
+  int hh = center.y - margin_y - 1;
   if (hw < 1) hw = 1;
   if (hh < 1) hh = 1;
   int32_t abs_sin = sin_a < 0 ? -sin_a : sin_a;
