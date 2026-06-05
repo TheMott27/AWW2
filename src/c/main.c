@@ -899,6 +899,8 @@ static void complication_layer_update(Layer *layer, GContext *ctx) {
 // EVENT HANDLERS
 // ============================================================
 
+static void shake_timer_callback(void *data);  // forward declaration
+
 static void numbers_timer_callback(void *data) {
   // 1s has elapsed — now switch from numbers to icons
   s_numbers_timer = NULL;
@@ -992,17 +994,23 @@ static void test_timer_callback(void *context) {
 
 static void accel_tap_handler(AccelAxisType axis, int32_t direction) {
   if (s_settings.shake_mode != SHAKE_MODE_ON_SHAKE) return;
-  // Show numbers first for 1 second, then switch to icons
-  s_showing_icons = false;  // numbers visible immediately
-  s_bg_last_hour = -1;
-  layer_mark_dirty(s_bg_layer);
-  layer_mark_dirty(s_complication_layer);
 
   // Cancel any in-flight timers
   if (s_numbers_timer) app_timer_cancel(s_numbers_timer);
   if (s_shake_timer) app_timer_cancel(s_shake_timer);
-  // After 1 second, numbers_timer_callback will flip to icons and start the main shake timer
-  s_numbers_timer = app_timer_register(1000, numbers_timer_callback, NULL);
+
+  // If icons are already showing, just reset the 5s timer — skip the numbers phase
+  if (s_showing_icons) {
+    s_shake_timer = app_timer_register(SHAKE_DISPLAY_MS, shake_timer_callback, NULL);
+    return;
+  }
+
+  // First shake: show numbers immediately, then switch to icons after 0.5s
+  s_showing_icons = false;
+  s_bg_last_hour = -1;
+  layer_mark_dirty(s_bg_layer);
+  layer_mark_dirty(s_complication_layer);
+  s_numbers_timer = app_timer_register(500, numbers_timer_callback, NULL);
 
   // Also show seconds hand on shake if in shake mode
   if (s_settings.seconds_hand_mode == SECONDS_MODE_SHAKE) {
