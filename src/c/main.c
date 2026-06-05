@@ -728,6 +728,11 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
       if (is_top_bottom) {
         if (h == 0 || h == 1 || h == 11) pos.y += num_half;
         else                              pos.y -= num_half;
+      } else {
+        // Left side (8, 9, 10): move inward (right)
+        // Right side (2, 3, 4): move inward (left)
+        if (h == 8 || h == 9 || h == 10) pos.x += num_half;
+        else                              pos.x -= num_half;
       }
       draw_hour_number(ctx, h, pos);
     }
