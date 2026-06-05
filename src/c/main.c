@@ -494,7 +494,7 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
   // Update runtime screen dimensions from actual layer size
   s_screen_w = bounds.size.w;
   s_screen_h = bounds.size.h;
-  GPoint center = GPoint(s_screen_w / 2, s_screen_h / 2);
+  GPoint center = GPoint((s_screen_w - 1) / 2, (s_screen_h - 1) / 2);
 
   graphics_context_set_fill_color(ctx, MONO_COLOR(s_settings.background_color));
   graphics_fill_rect(ctx, bounds, 0, GCornerNone);
@@ -765,7 +765,7 @@ static void draw_inittick_hand(GContext *ctx, GPoint center, GPoint tip,
 
 static void hour_layer_update(Layer *layer, GContext *ctx) {
   GRect bounds = layer_get_bounds(layer);
-  GPoint center = GPoint(bounds.size.w / 2, bounds.size.h / 2);
+  GPoint center = GPoint((bounds.size.w - 1) / 2, (bounds.size.h - 1) / 2);
   int radius = (bounds.size.w < bounds.size.h ? bounds.size.w : bounds.size.h) / 2;
   int32_t angle = DEG_TO_TRIGANGLE(
     (s_tick_tm.tm_hour % 12) * 30 + s_tick_tm.tm_min / 2);
@@ -775,7 +775,7 @@ static void hour_layer_update(Layer *layer, GContext *ctx) {
 
 static void minute_layer_update(Layer *layer, GContext *ctx) {
   GRect bounds = layer_get_bounds(layer);
-  GPoint center = GPoint(bounds.size.w / 2, bounds.size.h / 2);
+  GPoint center = GPoint((bounds.size.w - 1) / 2, (bounds.size.h - 1) / 2);
   int radius = (bounds.size.w < bounds.size.h ? bounds.size.w : bounds.size.h) / 2;
   int32_t angle = DEG_TO_TRIGANGLE(s_tick_tm.tm_min * 6);
   GColor outer = (!s_bt_connected && s_settings.bt_disconnect_min_inner_red)
@@ -870,7 +870,7 @@ static void complication_layer_update(Layer *layer, GContext *ctx) {
   }
   if (!show_temp && !show_date) return;
 
-  int cx = bounds.size.w / 2;
+  int cx = (bounds.size.w - 1) / 2;
   int comp_y = (s_tick_tm.tm_min >= 20 && s_tick_tm.tm_min <= 40) ? POS_Y(45) : POS_Y(105);
   GFont font = fonts_get_system_font(FONT_KEY_GOTHIC_18);
 
