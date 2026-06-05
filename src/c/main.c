@@ -539,8 +539,10 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
       // Right: i=7..22  (42°..132°)
       // Bottom: i=22..37 (132°..222°)
       // Left: i=37..52  (222°..312°)
-      // Outer endpoint at true pixel 0: margin=-1 gives hw=center.x, hh=center.y
-      GPoint outer_pt = square_perimeter_point(center, angle, -1, -1);
+      // Outer endpoint at true pixel 0 on ALL edges:
+      // center=(71,83), hw=72 reaches x=143, hh=84 reaches y=167
+      // Left (x=-1) and top (y=-1) overshoot is clipped by framebuffer
+      GPoint outer_pt = square_perimeter_point(center, angle, -2, -2);
       int dx = center.x - outer_pt.x;
       int dy = center.y - outer_pt.y;
       int adx = dx < 0 ? -dx : dx;
